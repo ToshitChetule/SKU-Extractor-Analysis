@@ -315,12 +315,12 @@ export default function ExtractionReviewPage() {
                         }
                       />
                     </th>
-                    {["SKU", ...allAttributes].map((attr, idx) => (
+                    {["SKU Description", ...allAttributes].map((attr, idx) => (
                       <th
                         key={idx}
                         style={{
                           ...thStyle,
-                          ...(attr === "SKU" ? stickySKUCol : {}),
+                          ...(attr === "SKU Description" ? stickySKUCol : {}),
                         }}
                       >
                         {attr}
