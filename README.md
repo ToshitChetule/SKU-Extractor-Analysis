@@ -133,3 +133,85 @@ VIMP Anirban's Approach Python first
    └─ setupTests.js
 
 ```
+```
+VIMP Anirban's Approach Python first
+├─ backend
+│  ├─ app.py
+│  ├─ graph
+│  │  ├─ neo4j_builder.py
+│  │  ├─ __init__.py
+│  │  └─ __pycache__
+│  │     ├─ neo4j_builder.cpython-313.pyc
+│  │     └─ __init__.cpython-313.pyc
+│  ├─ models
+│  │  ├─ llama_excel.py
+│  │  ├─ mistral_pdf.py
+│  │  ├─ refine_graph.py
+│  │  └─ __pycache__
+│  │     ├─ llama_excel.cpython-313.pyc
+│  │     ├─ mistral_pdf.cpython-313.pyc
+│  │     └─ refine_graph.cpython-313.pyc
+│  ├─ outputs
+│  │  ├─ processed_Sales Data.xlsx
+│  │  └─ processed_Variant Attribute Analysis (1).xlsx
+│  ├─ temp.xlsx
+│  ├─ uploads
+│  │  ├─ input_skus.xlsx
+│  │  ├─ Sales Data.xlsx
+│  │  ├─ Sample_data.xlsx
+│  │  ├─ Sample_data_10.xlsx
+│  │  ├─ Sample_data_10.xlsx.xlsx
+│  │  ├─ Synexa Dataset.xlsx
+│  │  ├─ SyntheticData_Hardware_20.xlsx
+│  │  ├─ SyntheticData_Pharma_15.xlsx
+│  │  └─ Variant Attribute Analysis (1).xlsx
+│  ├─ variant_analysis.py
+│  └─ __pycache__
+│     ├─ app.cpython-313.pyc
+│     └─ variant_analysis.cpython-313.pyc
+├─ package-lock.json
+├─ package.json
+├─ public
+│  ├─ favicon.ico
+│  ├─ index.html
+│  ├─ logo192.png
+│  ├─ logo512.png
+│  ├─ manifest.json
+│  └─ robots.txt
+├─ README.md
+└─ src
+   ├─ App.css
+   ├─ App.js
+   ├─ App.test.js
+   ├─ components
+   │  ├─ DocReviewPage.css
+   │  ├─ DocReviewPage.js
+   │  ├─ EditModal.css
+   │  ├─ EditModal.js
+   │  ├─ ExportFilePage.css
+   │  ├─ ExportFilePage.js
+   │  ├─ ExtractionReviewPage.css
+   │  ├─ ExtractionReviewPage.js
+   │  ├─ FileUploader.css
+   │  ├─ FileUploader.js
+   │  ├─ LoginPage.css
+   │  ├─ LoginPage.js
+   │  ├─ TableView.js
+   │  ├─ TopBar.css
+   │  ├─ TopBar.js
+   │  ├─ UploadPage.css
+   │  ├─ UploadPage.js
+   │  └─ VariantAttributePage.js
+   ├─ icons
+   │  ├─ doc.png
+   │  ├─ excel.png
+   │  ├─ pdf.png
+   │  └─ txt-file.png
+   ├─ index.css
+   ├─ index.js
+   ├─ logo.svg
+   ├─ Modal.js
+   ├─ reportWebVitals.js
+   └─ setupTests.js
+
+```
