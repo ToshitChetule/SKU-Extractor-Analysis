@@ -143,15 +143,31 @@ export default function DocReviewPage() {
       setProgress(100);
 
       setTimeout(() => {
-        navigate("/extraction_review", {
-        state: {
-          uploadedFilename,
-          sku_matrix: data.sku_matrix || [],
-          aggregated_matrix: data.aggregated_matrix || { columns: [], rows: [] },
-          modelUsed: data.model_used || "Unknown Model",
-        },
-      });
+        // 🧭 Check model type — if it's Mistral (PDF), go directly to Aggregated View
+        if (data.model_used === "mistral") {
+          navigate("/extraction_review", {
+            state: {
+              uploadedFilename,
+              sku_matrix: [], // hide SKU-level data
+              aggregated_matrix: data.aggregated_matrix || { columns: [], rows: [] },
+              modelUsed: data.model_used || "Mistral",
+              defaultView: "aggregated", // 🧠 tell review page to show aggregated view
+            },
+          });
+        } else {
+          // Default behavior for Excel (LLaMA)
+          navigate("/extraction_review", {
+            state: {
+              uploadedFilename,
+              sku_matrix: data.sku_matrix || [],
+              aggregated_matrix: data.aggregated_matrix || { columns: [], rows: [] },
+              modelUsed: data.model_used || "Unknown Model",
+              defaultView: "sku",
+            },
+          });
+        }
       }, 800);
+
     } catch (e) {
       clearInterval(progressInterval);
       setError("Failed to process file: " + e.message);
