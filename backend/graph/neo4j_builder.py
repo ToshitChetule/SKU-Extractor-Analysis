@@ -49,3 +49,20 @@ class Neo4jBuilder:
                         MERGE (a)-[:HAS_VALUE]->(v)
                     """, attribute=attribute, val=val)
         print("✅ Data successfully pushed to Neo4j graph.")
+
+        
+    def rename_attribute(self, old_name, new_name):
+        """
+        Renames an existing Attribute node while preserving its relationships.
+        If new_name already exists, merges both.
+        """
+        with self.driver.session() as session:
+            session.run("""
+                MATCH (a:Attribute {name: $old_name})
+                WITH a
+                MERGE (b:Attribute {name: $new_name})
+                WITH a, b
+                CALL apoc.refactor.mergeNodes([a, b]) YIELD node
+                RETURN node
+            """, old_name=old_name, new_name=new_name)
+        print(f"✅ Renamed attribute '{old_name}' → '{new_name}' in Neo4j.")
