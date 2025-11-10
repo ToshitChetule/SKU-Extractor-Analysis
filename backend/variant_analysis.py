@@ -285,5 +285,3 @@ def add_advanced_horizontal_percent_chart(filepath, sheet_name="Data_Analysis", 
     ws_chart.add_chart(bar, "B2")
     pct_ws.sheet_state = "hidden"
     wb.save(filepath)
-
-
