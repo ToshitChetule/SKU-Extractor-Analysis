@@ -6,8 +6,10 @@ from variant_analysis import run_variant_analysis
 
 # 🧠 Imports
 from models.llama_excel import process_excel_row_with_llama
-from models.mistral_pdf import process_pdf_with_mistral
+from models.mistral_pdf import process_pdf_with_mistral_normalizer
 from graph.neo4j_builder import Neo4jBuilder  # optional but kept for your KG logic
+
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
@@ -415,9 +417,39 @@ def process_file():
             })
 
         # ✅ PDF Processing
+        # elif ext == ".pdf":
+        #     print("🚀 Running PDF extraction using Mistral model...\n")
+        #     result = process_pdf_with_mistral(filepath, domain_prompt)
+
+        #     return jsonify({
+        #         "sku_matrix": [],
+        #         "aggregated_matrix": {
+        #             "columns": result.get("columns", []),
+        #             "rows": result.get("rows", [])
+        #         },
+        #         "model_used": "Mistral",
+        #         "industry": industry,
+        #         "product_type": product_type
+        #     })
+
+        # elif ext == ".pdf":
+        #     print("🚀 Running Hybrid DeepSeek + Mistral extraction...\n")
+        #     result = process_pdf_with_hybrid(filepath, domain_prompt)
+
+        #     return jsonify({
+        #         "sku_matrix": [],
+        #         "aggregated_matrix": {
+        #             "columns": result.get("columns", []),
+        #             "rows": result.get("rows", [])
+        #         },
+        #         "model_used": "Hybrid DeepSeek + Mistral",
+        #         "industry": industry,
+        #         "product_type": product_type
+        #     })
+
         elif ext == ".pdf":
-            print("🚀 Running PDF extraction using Mistral model...\n")
-            result = process_pdf_with_mistral(filepath, domain_prompt)
+            print("🚀 Running Mistral + Normalizer extraction...\n")
+            result = process_pdf_with_mistral_normalizer(filepath, domain_prompt)
 
             return jsonify({
                 "sku_matrix": [],
@@ -425,13 +457,15 @@ def process_file():
                     "columns": result.get("columns", []),
                     "rows": result.get("rows", [])
                 },
-                "model_used": "Mistral",
+                "model_used": "Mistral + Normalizer",
                 "industry": industry,
                 "product_type": product_type
             })
 
-        else:
-            return jsonify({"error": f"Unsupported file type: {ext}"}), 400
+
+
+        # else:
+        #     return jsonify({"error": f"Unsupported file type: {ext}"}), 400
 
     except Exception as e:
         print(f"❌ Error during processing: {str(e)}")

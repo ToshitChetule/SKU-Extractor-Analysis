@@ -519,6 +519,7 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import Swal from "sweetalert2";
 
+
 export default function ExtractionReviewPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -593,21 +594,91 @@ export default function ExtractionReviewPage() {
   };
 
   // ✅ Export logic
-  const handleExport = (format) => {
+  // const handleExport = (format) => {
+  //   let data, filename, columns, rows;
+
+  //   if (viewMode === "config") {
+  //     data = matrixRows;
+  //     filename = `${uploadedFilename}_Configuration_Matrix`;
+  //   } else {
+  //     columns = localAggregated.columns || [];
+  //     rows = localAggregated.rows || [];
+  //     data = rows.map((r) =>
+  //       Object.fromEntries(columns.map((c, i) => [c, r[i]]))
+  //     );
+  //     filename = `${uploadedFilename}_Aggregated_Attributes`;
+  //   }
+
+  //   if (format === "xlsx") {
+  //     const ws = XLSX.utils.json_to_sheet(data);
+  //     const wb = XLSX.utils.book_new();
+  //     XLSX.utils.book_append_sheet(
+  //       wb,
+  //       ws,
+  //       viewMode === "config" ? "Configuration" : "Aggregated"
+  //     );
+  //     XLSX.writeFile(wb, `${filename}.xlsx`);
+  //   } else if (format === "pdf") {
+  //     const doc = new jsPDF();
+  //     doc.text(filename, 14, 16);
+  //     if (viewMode === "config") {
+  //       doc.autoTable({
+  //         head: [Object.keys(matrixRows[0] || {})],
+  //         body: filteredRows.map((r) => Object.values(r)),
+  //         startY: 20,
+  //         styles: { fontSize: 8 },
+  //       });
+  //     } else {
+  //       doc.autoTable({
+  //         head: [columns],
+  //         body: rows,
+  //         startY: 20,
+  //         styles: { fontSize: 8 },
+  //       });
+  //     }
+  //     doc.save(`${filename}.pdf`);
+  //   }
+
+  //   Swal.fire({
+  //     icon: "success",
+  //     title: "Exported Successfully!",
+  //     timer: 1500,
+  //     showConfirmButton: false,
+  //   });
+  //   setExportMenuOpen(false);
+  // };
+
+  // ✅ Export logic (Fixed & Enhanced)
+const handleExport = (format) => {
+  try {
     let data, filename, columns, rows;
 
+    // 🧩 Case 1: Configuration Matrix View
     if (viewMode === "config") {
       data = matrixRows;
-      filename = `${uploadedFilename}_Configuration_Matrix`;
-    } else {
+      filename = uploadedFilename
+        ? `${uploadedFilename.replace(/\.[^/.]+$/, "")}_Configuration_Matrix`
+        : "Configuration_Matrix";
+    }
+    // 🧩 Case 2: Aggregated Attributes View
+    else {
       columns = localAggregated.columns || [];
       rows = localAggregated.rows || [];
+
+      if (!columns.length || !rows.length) {
+        Swal.fire("No data available to export.", "", "info");
+        return;
+      }
+
       data = rows.map((r) =>
         Object.fromEntries(columns.map((c, i) => [c, r[i]]))
       );
-      filename = `${uploadedFilename}_Aggregated_Attributes`;
+      filename = uploadedFilename
+        ? `${uploadedFilename.replace(/\.[^/.]+$/, "")}_Aggregated_Attributes`
+        : "Aggregated_Attributes";
     }
 
+    // ✅ Excel Export
     if (format === "xlsx") {
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
@@ -617,35 +688,67 @@ export default function ExtractionReviewPage() {
         viewMode === "config" ? "Configuration" : "Aggregated"
       );
       XLSX.writeFile(wb, `${filename}.xlsx`);
-    } else if (format === "pdf") {
-      const doc = new jsPDF();
-      doc.text(filename, 14, 16);
+
+      Swal.fire({
+        icon: "success",
+        title: "Excel Exported Successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    }
+
+    // ✅ PDF Export
+    else if (format === "pdf") {
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "pt",
+        format: "a4",
+      });
+
+      doc.setFontSize(14);
+      doc.text(filename, 40, 40);
+
+      // AutoTable content
       if (viewMode === "config") {
+        const headers = Object.keys(matrixRows[0] || {});
+        const body = filteredRows.map((r) => Object.values(r));
+
         doc.autoTable({
-          head: [Object.keys(matrixRows[0] || {})],
-          body: filteredRows.map((r) => Object.values(r)),
-          startY: 20,
-          styles: { fontSize: 8 },
+          head: [headers],
+          body,
+          startY: 60,
+          styles: { fontSize: 8, overflow: "linebreak" },
+          headStyles: { fillColor: [99, 102, 241] },
         });
       } else {
         doc.autoTable({
           head: [columns],
           body: rows,
-          startY: 20,
-          styles: { fontSize: 8 },
+          startY: 60,
+          styles: { fontSize: 8, overflow: "linebreak" },
+          headStyles: { fillColor: [59, 130, 246] },
         });
       }
+
       doc.save(`${filename}.pdf`);
+
+      Swal.fire({
+        icon: "success",
+        title: "PDF Exported Successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     }
 
-    Swal.fire({
-      icon: "success",
-      title: "Exported Successfully!",
-      timer: 1500,
-      showConfirmButton: false,
-    });
     setExportMenuOpen(false);
-  };
+  } catch (err) {
+    console.error("Export Error:", err);
+    Swal.fire("Error", err.message, "error");
+  }
+};
+
+
+
 
   // ✅ Graph-based Refinement with Live UI Update
   const handleRefineAttributes = async () => {
