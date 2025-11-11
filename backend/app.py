@@ -8,6 +8,7 @@ from variant_analysis import run_variant_analysis
 from models.llama_excel import process_excel_row_with_llama
 from models.mistral_pdf import process_pdf_with_mistral_normalizer
 from graph.neo4j_builder import Neo4jBuilder  # optional but kept for your KG logic
+from models.refine_graph import refine_with_graph_context
 
 
 
@@ -416,36 +417,6 @@ def process_file():
                 "product_type": product_type
             })
 
-        # ✅ PDF Processing
-        # elif ext == ".pdf":
-        #     print("🚀 Running PDF extraction using Mistral model...\n")
-        #     result = process_pdf_with_mistral(filepath, domain_prompt)
-
-        #     return jsonify({
-        #         "sku_matrix": [],
-        #         "aggregated_matrix": {
-        #             "columns": result.get("columns", []),
-        #             "rows": result.get("rows", [])
-        #         },
-        #         "model_used": "Mistral",
-        #         "industry": industry,
-        #         "product_type": product_type
-        #     })
-
-        # elif ext == ".pdf":
-        #     print("🚀 Running Hybrid DeepSeek + Mistral extraction...\n")
-        #     result = process_pdf_with_hybrid(filepath, domain_prompt)
-
-        #     return jsonify({
-        #         "sku_matrix": [],
-        #         "aggregated_matrix": {
-        #             "columns": result.get("columns", []),
-        #             "rows": result.get("rows", [])
-        #         },
-        #         "model_used": "Hybrid DeepSeek + Mistral",
-        #         "industry": industry,
-        #         "product_type": product_type
-        #     })
 
         elif ext == ".pdf":
             print("🚀 Running Mistral + Normalizer extraction...\n")
@@ -472,28 +443,265 @@ def process_file():
         return jsonify({"error": str(e)}), 500
 
 
-# 🧠 Attribute Refinement Endpoint (future use)
-@app.route("/refine", methods=["POST", "OPTIONS"])
-def refine_attributes():
+# # ✅ Attribute & Value Refinement via Knowledge Graph
+# @app.route("/refine_graph", methods=["POST", "OPTIONS"])
+# def refine_graph():
+#     if request.method == "OPTIONS":
+#         return jsonify({"status": "OK"}), 200
+
+#     from graph.neo4j_builder import Neo4jBuilder
+#     from models.refine_graph import refine_with_graph_context
+
+#     try:
+#         data = request.get_json()
+#         attribute = data.get("attribute")
+#         prompt = data.get("prompt")
+
+#         if not attribute or not prompt:
+#             return jsonify({"error": "Missing attribute or prompt"}), 400
+
+#         neo = Neo4jBuilder()
+
+#         # 🧩 Step 1: Get current graph context
+#         current_values = neo.get_values(attribute)
+#         graph_context = {"attribute": attribute, "values": current_values}
+
+#         print(f"🔍 Graph context for refinement: {graph_context}")
+
+#         # 🧠 Step 2: Get LLM-generated refinement plan
+#         plan = refine_with_graph_context(graph_context, prompt)
+#         print(f"🧩 Model refinement plan: {plan}")
+
+#         if not plan:
+#             neo.close()
+#             return jsonify({"error": "Model returned empty or invalid refinement plan."}), 400
+
+#         # 🧩 Step 3: Apply refinements in Neo4j
+#         new_attr_name = attribute
+#         if "rename_attribute_to" in plan:
+#             new_attr_name = plan["rename_attribute_to"]
+#             neo.rename_attribute(attribute, new_attr_name)
+
+#         if "add_values" in plan:
+#             for v in plan["add_values"]:
+#                 neo.add_value(new_attr_name, v)
+
+#         if "remove_values" in plan:
+#             for v in plan["remove_values"]:
+#                 neo.remove_value(new_attr_name, v)
+
+#         # Future: handle merging or selective "keep_values" if needed
+#         # For now, we'll assume LLM instructs which to keep/remove explicitly
+
+#         # 🧩 Step 4: Fetch updated data for UI
+#         updated_values = neo.get_values(new_attr_name)
+#         neo.close()
+
+#         return jsonify({
+#             "updated_context": {
+#                 "attribute": new_attr_name,
+#                 "values": updated_values,
+#                 "related_attributes": plan.get("merge_with_attributes", [])
+#             }
+#         })
+
+#     except Exception as e:
+#         print(f"❌ Error in refine_graph: {e}")
+#         return jsonify({"error": str(e)}), 500
+
+def detect_refinement_intent(user_prompt: str):
+    """
+    Detects whether the user wants to rename an attribute or a value.
+    Returns one of: 'attribute', 'value', or 'unknown'.
+    """
+    if not user_prompt:
+        return "unknown"
+
+    p = user_prompt.lower()
+
+    # Clear rules
+    if "rename" in p and "attribute" in p:
+        return "attribute"
+    if "rename" in p and "value" in p:
+        return "value"
+
+    # Heuristics (for less explicit prompts)
+    if "under" in p or "in " in p or "inside" in p:
+        return "value"
+
+    return "attribute"
+
+
+
+
+# @app.route("/refine_graph", methods=["POST", "OPTIONS"])
+# def refine_graph():
+#     if request.method == "OPTIONS":
+#         return jsonify({"status": "OK"}), 200
+
+#     from models.refine_graph import refine_with_graph_context
+#     from graph.neo4j_builder import Neo4jBuilder
+
+#     try:
+#         data = request.get_json()
+#         attribute = data.get("attribute")
+#         user_prompt = data.get("prompt")
+
+#         if not attribute or not user_prompt:
+#             return jsonify({"error": "Missing 'attribute' or 'prompt'."}), 400
+
+#         neo = Neo4jBuilder()
+
+#         # 🧠 Fetch current graph context
+#         graph_context = {
+#             "attribute": attribute,
+#             "values": neo.get_values(attribute)
+#         }
+#         print("🔍 Graph context for refinement:", graph_context)
+
+#         # 🧩 Ask model for structured refinement plan
+#         plan = refine_with_graph_context(graph_context, user_prompt)
+#         print("🧩 Model refinement plan:", plan)
+
+#         updated_attribute = attribute
+#         updated_values = graph_context["values"]
+
+#         # ------------------------------------------------------------------
+#         # 🔧 Execute refinement actions based on model plan
+#         # ------------------------------------------------------------------
+#         if "remove_attribute" in plan:
+#             neo.delete_attribute(plan["remove_attribute"])
+#             print(f"🗑️ Deleted attribute '{plan['remove_attribute']}' from Neo4j.")
+#             updated_attribute = None
+#             updated_values = []
+
+#         elif "rename_attribute_to" in plan:
+#             new_name = plan["rename_attribute_to"]
+#             neo.rename_attribute(attribute, new_name)
+#             updated_attribute = new_name
+
+#         if "merge_with_attributes" in plan:
+#             merge_list = plan["merge_with_attributes"]
+#             if updated_attribute not in merge_list:
+#                 merge_list.append(updated_attribute)
+#             neo.merge_attributes(merge_list, updated_attribute)
+
+#         if "add_values" in plan:
+#             for val in plan["add_values"]:
+#                 neo.add_value(updated_attribute, val)
+#                 updated_values.append(val)
+
+#         if "remove_values" in plan:
+#             for val in plan["remove_values"]:
+#                 neo.remove_value(updated_attribute, val)
+#                 updated_values = [v for v in updated_values if v.lower() != val.lower()]
+
+#         if "keep_values" in plan:
+#             updated_values = [v for v in updated_values if v in plan["keep_values"]]
+
+#         # ------------------------------------------------------------------
+#         # 🧱 Build response + update UI
+#         # ------------------------------------------------------------------
+#         updated_context = {
+#             "attribute": updated_attribute,
+#             "values": sorted(set(updated_values)),
+#             "related_attributes": plan.get("merge_with_attributes", [])
+#         }
+
+#         neo.close()
+
+#         print("✅ Refinement applied successfully:", updated_context)
+#         return jsonify({"updated_context": updated_context}), 200
+
+#     except Exception as e:
+#         print(f"❌ Error in refine_graph: {e}")
+#         return jsonify({"error": str(e)}), 500
+
+@app.route("/refine_graph", methods=["POST", "OPTIONS"])
+def refine_graph():
     if request.method == "OPTIONS":
         return jsonify({"status": "OK"}), 200
 
     try:
         data = request.get_json()
-        selected_rows = data.get("selectedRows")
-        full_table = data.get("fullTable")
-        chat_history = data.get("chatHistory")
+        attribute = data.get("attribute")
+        prompt = data.get("prompt")
 
-        if not selected_rows or not chat_history:
-            return jsonify({"error": "Missing selectedRows or chatHistory"}), 400
+        from models.refine_graph import refine_with_graph_context
+        from graph.neo4j_builder import Neo4jBuilder
 
-        from models.llama_excel import refine_with_llama
-        refined_rows = refine_with_llama(selected_rows, chat_history, full_table)
-        return jsonify({"rows": refined_rows}), 200
+        neo = Neo4jBuilder()
+
+        # 1️⃣ Get graph context
+        values = neo.get_values(attribute)
+        graph_context = {"attribute": attribute, "values": values}
+        print("🔍 Graph context for refinement:", graph_context)
+
+        # 2️⃣ Send to model
+        plan = refine_with_graph_context(graph_context, prompt)
+        print("🧩 Model refinement plan:", plan)
+
+        # 3️⃣ Detect user intent before acting
+        intent = detect_refinement_intent(prompt)
+
+        # 4️⃣ Execute corresponding Neo4j operation
+        if intent == "attribute" and "rename_attribute_to" in plan:
+            new_name = plan["rename_attribute_to"]
+            neo.rename_attribute(attribute, new_name)
+            updated_attr = new_name
+            updated_values = neo.get_values(new_name)
+
+        elif intent == "value":
+            # Rename value logic — detect from prompt if possible
+            import re
+            match = re.search(r"rename value\s+(.*?)\s+to\s+(.*?)($|\s|under|in)", prompt.lower())
+            if match:
+                old_val, new_val = match.groups()[:2]
+                neo.rename_value(attribute, old_val.strip(), new_val.strip())
+                updated_attr = attribute
+                updated_values = neo.get_values(attribute)
+            else:
+                updated_attr = attribute
+                updated_values = neo.get_values(attribute)
+
+        elif "add_values" in plan:
+            for val in plan["add_values"]:
+                neo.add_value(attribute, val)
+            updated_attr = attribute
+            updated_values = neo.get_values(attribute)
+
+        elif "remove_values" in plan:
+            for val in plan["remove_values"]:
+                neo.remove_value(attribute, val)
+            updated_attr = attribute
+            updated_values = neo.get_values(attribute)
+
+        elif "merge_with_attributes" in plan and "rename_attribute_to" in plan:
+            merge_list = plan["merge_with_attributes"]
+            new_name = plan["rename_attribute_to"]
+            neo.merge_attributes(merge_list, new_name)
+            updated_attr = new_name
+            updated_values = neo.get_values(new_name)
+
+        else:
+            updated_attr = attribute
+            updated_values = neo.get_values(attribute)
+
+        neo.close()
+
+        # 5️⃣ Return updated info to frontend
+        return jsonify({
+            "status": "success",
+            "updated_context": {
+                "attribute": updated_attr,
+                "values": updated_values
+            }
+        }), 200
 
     except Exception as e:
-        print(f"❌ Refinement error: {e}")
+        print(f"❌ Error in refine_graph: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 
 
@@ -561,6 +769,39 @@ def compare_ui_vs_graph():
     except Exception as e:
         print(f"❌ Comparison error: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route("/graph/aggregated", methods=["GET"])
+def get_aggregated_from_graph():
+    """Fetch the latest Attribute–Value table from Neo4j."""
+    try:
+        from graph.neo4j_builder import Neo4jBuilder
+        neo = Neo4jBuilder()
+
+        with neo.driver.session() as session:
+            result = session.run("""
+                MATCH (a:Attribute)-[:HAS_VALUE]->(v:Value)
+                RETURN a.name AS attribute, collect(v.value) AS values
+            """)
+
+            rows = []
+            attribute_map = {}
+            for record in result:
+                attribute = record["attribute"]
+                values = record["values"]
+                attribute_map[attribute] = values
+                rows.append([attribute] + values)
+
+            # Dynamically create column headers
+            max_len = max((len(v) for v in attribute_map.values()), default=0)
+            columns = ["Attribute"] + [f"Value{i+1}" for i in range(max_len)]
+
+        neo.close()
+        return jsonify({"columns": columns, "rows": rows}), 200
+
+    except Exception as e:
+        print(f"❌ Error fetching graph data: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 
 
