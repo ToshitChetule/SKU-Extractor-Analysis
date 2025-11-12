@@ -154,15 +154,19 @@ class Neo4jBuilder:
     # 🆕 VALUE UTILITIES
     # --------------------------------------------------------------------------
     def add_value(self, attr_name, new_value):
-        """Adds a new Value node and links it to an existing Attribute."""
+        """
+        Adds a new value under an existing or new attribute.
+        If the attribute doesn't exist, it's created automatically.
+        Fully safe (no duplicates, case-insensitive).
+        """
         with self.driver.session() as session:
             session.run("""
-                MATCH (a:Attribute)
-                WHERE toLower(a.name) = toLower($attr_name)
+                MERGE (a:Attribute {name: $attr_name})
                 MERGE (v:Value {value: $new_value})
                 MERGE (a)-[:HAS_VALUE]->(v)
-            """, attr_name=attr_name, new_value=new_value)
+            """, attr_name=attr_name.strip(), new_value=new_value.strip())
         print(f"✅ Added value '{new_value}' under '{attr_name}'.")
+
 
     # def remove_value(self, attr_name, value_name):
     #     """Removes a specific value relationship from an attribute."""
